@@ -7,7 +7,7 @@ export default defineConfig({
   initialState: {},
   request: {},
   layout: {
-    title: '@umijs/max',
+    title: '跨境工具',
   },
   routes: [
     {
@@ -15,7 +15,7 @@ export default defineConfig({
       redirect: '/home',
     },
     {
-      name: '首页',
+      name: '网红邮箱搜集',
       path: '/home',
       component: './Home',
     },
