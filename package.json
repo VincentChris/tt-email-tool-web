@@ -14,7 +14,8 @@
     "@ant-design/icons": "^5.3.6",
     "@ant-design/pro-components": "^2.7.1",
     "@umijs/max": "^4.1.10",
-    "antd": "^5.17.0"
+    "antd": "^5.17.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",
