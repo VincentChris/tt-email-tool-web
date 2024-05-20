@@ -1,3 +1,5 @@
+import { useEmailEvent } from '@/hooks';
+import { delay } from '@/utils/format';
 import { InboxOutlined } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import type { PaginationProps, TableProps } from 'antd';
@@ -104,15 +106,16 @@ const HomePage: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [xlsxFile, setXlsxFile] = useState<null | any>(null);
   const [workbook, setWorkbook] = useState<null | XLSX.WorkBook>(null);
+  const [dataSource, setDataSource] = useState<ITableRow[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const tableProps = useMemo<{
     columns: TableProps<ITableRow>['columns'];
-    dataSource: TableProps<ITableRow>['dataSource'];
+    // dataSource: TableProps<ITableRow>['dataSource'];
   }>(() => {
     const defaultData = {
       columns: [],
-      dataSource: [],
+      sheetDataSource: [],
     };
     if (!workbook) {
       return defaultData;
@@ -130,8 +133,12 @@ const HomePage: React.FC = () => {
     const columns = sheetHeader.map((item, index) => ({
       ...(ColumnsWidth[index] ?? {}),
       title: item,
+      width: item === '邮箱' ? 250 : undefined,
       dataIndex: item,
       key: item,
+      ellipsis: {
+        showTitle: true,
+      },
       render:
         item === '达人头像'
           ? (text: string) => {
@@ -152,11 +159,24 @@ const HomePage: React.FC = () => {
         return pre;
       }, {});
     });
+    setDataSource(dataSource);
     return { columns, dataSource } as {
       columns: TableProps<ITableRow>['columns'];
-      dataSource: TableProps<ITableRow>['dataSource'];
+      // sheetDataSource: TableProps<ITableRow>['dataSource'];
     };
   }, [workbook]);
+  useEmailEvent((detail) => {
+    console.log('Message from Content Script:', detail);
+    const { nickname, email } = detail;
+    setDataSource(
+      dataSource.map((item) => {
+        if (item['达人昵称'] === nickname) {
+          item['邮箱'] = email;
+        }
+        return { ...item };
+      }),
+    );
+  });
   return (
     <PageContainer ghost>
       <div className={styles.container}>
@@ -229,18 +249,22 @@ const HomePage: React.FC = () => {
               <Col>
                 <Button
                   style={{ marginRight: 8 }}
-                  onClick={() => {
-                    const curPageData = (tableProps.dataSource ?? []).slice(
-                      (currentPage - 1) * pageSize,
-                      pageSize,
+                  onClick={async () => {
+                    const startIndex = (currentPage - 1) * pageSize;
+                    const curPageData = (dataSource ?? []).slice(
+                      startIndex,
+                      startIndex + pageSize,
                     );
                     if (!curPageData.length) {
                       message.error('当前页没有数据');
                       return;
                     }
-                    curPageData.forEach((item) => {
-                      window.open(item['TikTok官网达人主页']);
-                    });
+                    let index = 0;
+                    while (index < curPageData.length) {
+                      window.open(curPageData[index]['TikTok官网达人主页']);
+                      await delay(1000);
+                      index++;
+                    }
                   }}
                 >
                   获取当前页邮箱数据
@@ -259,13 +283,13 @@ const HomePage: React.FC = () => {
             <Table
               columns={tableProps.columns}
               scroll={{ x: 1200 }}
-              dataSource={tableProps.dataSource}
+              dataSource={dataSource}
               pagination={{
                 position: ['topRight'],
                 showTotal: showTotal,
                 current: currentPage,
                 pageSize,
-                total: (tableProps.dataSource ?? []).length,
+                total: (dataSource ?? []).length,
                 onChange: (page, pageSize) => {
                   console.log('page', page, pageSize);
                   setCurrentPage(page);
